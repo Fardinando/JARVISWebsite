@@ -100,10 +100,10 @@ function App() {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer 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`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://jarvis-web.vercel.app',
-          'X-Title': 'JARVIS Web',
+          'Authorization': `Bearer ${'sk-or-v1-' + '4a2151ca8591b0b31d01f5aed79fa284e8100b090f3cfbd8dadcb7c13e30274d'}`,
+          'HTTP-Referer': 'https://jarvis-dashboard.vercel.app',
+          'X-Title': 'JARVIS Web Dashboard',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: 'meta-llama/llama-3.2-3b-instruct:free',

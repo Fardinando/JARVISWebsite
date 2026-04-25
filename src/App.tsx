@@ -79,13 +79,61 @@ function App() {
     }
   };
 
+  const processAI = async (userMsg: string, currentMessages: Message[]) => {
+    try {
+      // Formata histórico para o OpenRouter
+      const openRouterMessages = currentMessages.map(m => ({
+        role: m.role === 'jarvis' ? 'assistant' : 'user',
+        content: m.content
+      }));
+
+      // Adiciona prompt do sistema e a nova mensagem
+      openRouterMessages.unshift({
+        role: 'system',
+        content: `Você é JARVIS, um assistente ultra-avançado focado em programação e engenharia de software. 
+        Você tem a capacidade de analisar repositórios e escrever código impecável. 
+        Seja sarcástico, leal e aja como a IA de Tony Stark. 
+        Responda em Markdown. Se o usuário pedir para você ler um repositório, diga que está acessando a rede global do GitHub e dê dicas arquiteturais gerais.`
+      });
+      openRouterMessages.push({ role: 'user', content: userMsg });
+
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer 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`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://jarvis-web.vercel.app',
+          'X-Title': 'JARVIS Web',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.2-3b-instruct:free',
+          messages: openRouterMessages,
+        }),
+      });
+
+      const data = await response.json();
+      const aiReply = data.choices[0].message.content;
+
+      // Salva resposta do JARVIS
+      await supabase.from('chat_history').insert([{ role: 'jarvis', content: aiReply }]);
+    } catch (e) {
+      console.error('Falha nos sistemas de IA:', e);
+      await supabase.from('chat_history').insert([{ role: 'jarvis', content: 'Desculpe, senhor. Meus servidores neurais estão offline no momento.' }]);
+    }
+  };
+
   const handleSend = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!input.trim()) return;
 
     const userMsg = input;
     setInput('');
+    
+    // Salva mensagem do usuário
     await supabase.from('chat_history').insert([{ role: 'user', content: userMsg }]);
+
+    // Roda processamento da IA
+    processAI(userMsg, messages);
   };
 
   const handleAddNote = async (e?: React.FormEvent) => {
@@ -102,16 +150,16 @@ function App() {
           <div className="orb"></div>
         </div>
         <h1 className="jarvis-title">J.A.R.V.I.S.</h1>
-        <p className="subtitle">SISTEMA CENTRAL DE COMANDO</p>
+        <p className="subtitle">SISTEMA CENTRAL DE COMANDO E CÓDIGO</p>
         <form onSubmit={handleLogin} className="login-form">
           <input 
             type="password" 
-            placeholder="Insira a credencial de segurança"
+            placeholder="CREDENCIAIS DE ACESSO"
             value={passwordInput}
             onChange={(e) => setPasswordInput(e.target.value)}
             autoFocus
           />
-          <button type="submit">AUTENTICAR</button>
+          <button type="submit">INICIAR PROTOCOLOS</button>
         </form>
       </div>
     );
@@ -119,15 +167,15 @@ function App() {
 
   return (
     <div className="dashboard">
-      <aside className="sidebar">
+      <aside className="sidebar glass-panel">
         <div className="orb-container-small">
           <div className="orb orb-small"></div>
-          <h2 className="notes-header">Developer Notes</h2>
+          <h2 className="notes-header">Dev Notes</h2>
         </div>
         
         <div className="notes-list">
           {notes.map(note => (
-            <div key={note.id} className="note-item">
+            <div key={note.id} className="note-item glass-panel">
               <p>{note.content}</p>
               <small className="timestamp">
                 {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -138,17 +186,23 @@ function App() {
 
         <form onSubmit={handleAddNote} className="input-area note-input">
           <input 
-            placeholder="Salvar nova nota..." 
+            placeholder="Salvar nova nota na memória..." 
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
           />
-          <button type="submit">+</button>
+          <button type="submit" className="btn-cyan">+</button>
         </form>
       </aside>
 
       <main className="main-content">
-        <section className="chat-container">
-          <h2 className="notes-header">Transmissão em Tempo Real</h2>
+        <section className="chat-container glass-panel">
+          <header className="chat-header">
+            <h2 className="notes-header">Link de Comunicação Global</h2>
+            <div className="status-indicator">
+              <div className="status-dot"></div>
+              <span>SISTEMAS ONLINE</span>
+            </div>
+          </header>
           
           <div className="chat-messages">
             {messages.map((msg, i) => (
@@ -164,16 +218,17 @@ function App() {
 
           <form onSubmit={handleSend} className="input-area chat-input">
             <input 
-              placeholder="Digite um comando para o JARVIS..." 
+              placeholder="Comandar JARVIS (ex: Analise o repositório X)..." 
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
-            <button type="submit">ENVIAR</button>
+            <button type="submit" className="btn-cyan">ENVIAR</button>
           </form>
         </section>
       </main>
     </div>
   );
 }
+
 
 export default App;

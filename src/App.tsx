@@ -14,6 +14,8 @@ interface Message {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [input, setInput] = useState('');
@@ -38,9 +40,10 @@ function App() {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     fetchData();
     
-    // Inscrição Realtime para Chat
     const chatChannel = supabase
       .channel('chat_changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_history' }, () => {
@@ -48,7 +51,6 @@ function App() {
       })
       .subscribe();
 
-    // Inscrição Realtime para Notas
     const notesChannel = supabase
       .channel('notes_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'developer_notes' }, () => {
@@ -60,7 +62,7 @@ function App() {
       supabase.removeChannel(chatChannel);
       supabase.removeChannel(notesChannel);
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,73 +70,106 @@ function App() {
 
   useEffect(scrollToBottom, [messages]);
 
-  const handleSend = async () => {
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === 'stark2026') {
+      setIsAuthenticated(true);
+    } else {
+      alert('Acesso Negado: Código de Autorização Inválido.');
+    }
+  };
+
+  const handleSend = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!input.trim()) return;
 
     const userMsg = input;
     setInput('');
-    
-    // Salva no Supabase
     await supabase.from('chat_history').insert([{ role: 'user', content: userMsg }]);
   };
 
-  const handleAddNote = async () => {
+  const handleAddNote = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!newNote.trim()) return;
     await supabase.from('developer_notes').insert([{ content: newNote }]);
     setNewNote('');
   };
 
-  return (
-    <div className="dashboard">
-      <aside className="sidebar">
+  if (!isAuthenticated) {
+    return (
+      <div className="login-screen">
         <div className="orb-container">
           <div className="orb"></div>
         </div>
+        <h1 className="jarvis-title">J.A.R.V.I.S.</h1>
+        <p className="subtitle">SISTEMA CENTRAL DE COMANDO</p>
+        <form onSubmit={handleLogin} className="login-form">
+          <input 
+            type="password" 
+            placeholder="Insira a credencial de segurança"
+            value={passwordInput}
+            onChange={(e) => setPasswordInput(e.target.value)}
+            autoFocus
+          />
+          <button type="submit">AUTENTICAR</button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="dashboard">
+      <aside className="sidebar">
+        <div className="orb-container-small">
+          <div className="orb orb-small"></div>
+          <h2 className="notes-header">Developer Notes</h2>
+        </div>
         
-        <h2 className="notes-header">Developer Notes</h2>
         <div className="notes-list">
           {notes.map(note => (
             <div key={note.id} className="note-item">
               <p>{note.content}</p>
-              <small style={{ color: 'var(--jarvis-cyan)', opacity: 0.6 }}>
+              <small className="timestamp">
                 {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </small>
             </div>
           ))}
         </div>
 
-        <div className="input-area" style={{ marginTop: '20px', padding: '10px' }}>
+        <form onSubmit={handleAddNote} className="input-area note-input">
           <input 
-            placeholder="Nova nota..." 
+            placeholder="Salvar nova nota..." 
             value={newNote}
             onChange={(e) => setNewNote(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddNote()}
           />
-          <button onClick={handleAddNote} style={{ padding: '8px 15px' }}>+</button>
-        </div>
+          <button type="submit">+</button>
+        </form>
       </aside>
 
       <main className="main-content">
         <section className="chat-container">
-          <h2 className="notes-header">Sistemas Centrais</h2>
+          <h2 className="notes-header">Transmissão em Tempo Real</h2>
+          
           <div className="chat-messages">
             {messages.map((msg, i) => (
-              <div key={i} className={`message ${msg.role}`}>
-                {msg.content}
+              <div key={msg.id || i} className={`message-wrapper ${msg.role}`}>
+                <div className="message-sender">{msg.role === 'jarvis' ? 'J.A.R.V.I.S.' : 'FERNANDO'}</div>
+                <div className={`message ${msg.role}`}>
+                  {msg.content}
+                </div>
               </div>
             ))}
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="input-area">
+          <form onSubmit={handleSend} className="input-area chat-input">
             <input 
-              placeholder="Falar com o JARVIS..." 
+              placeholder="Digite um comando para o JARVIS..." 
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             />
-            <button onClick={handleSend}>ENVIAR</button>
-          </div>
+            <button type="submit">ENVIAR</button>
+          </form>
         </section>
       </main>
     </div>

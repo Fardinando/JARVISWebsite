@@ -112,7 +112,14 @@ function App() {
       });
 
       const data = await response.json();
-      const aiReply = data.choices[0].message.content;
+      let aiReply = '';
+      if (data.error) {
+        aiReply = `[SISTEMA] Erro na API OpenRouter: ${data.error.message || 'Rate limit (429)'}`;
+      } else if (data.choices && data.choices.length > 0) {
+        aiReply = data.choices[0].message.content;
+      } else {
+        aiReply = '[SISTEMA] Nenhuma resposta retornada.';
+      }
 
       // Salva resposta do JARVIS
       await supabase.from('chat_history').insert([{ role: 'jarvis', content: aiReply }]);

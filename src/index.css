@@ -382,3 +382,40 @@ button:hover {
   background: var(--glass-border);
   border-radius: 10px;
 }
+
+.delete-note-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: #ff4a4a;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.note-item {
+  position: relative;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+}
+  background: transparent;
+  border: none;
+  color: #ff4a4a;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.note-item:hover .delete-note-btn {
+  opacity: 1;
+}
+
+.delete-note-btn:hover {
+  color: #ff0000;
+  transform: scale(1.2);
+}

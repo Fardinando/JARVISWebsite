@@ -150,6 +150,17 @@ function App() {
     setNewNote('');
   };
 
+  const handleDeleteNote = async (id: string) => {
+    // Delete from Supabase
+    const { error } = await supabase.from('developer_notes').delete().eq('id', id);
+    if (!error) {
+      // Remove locally
+      setNotes(prev => prev.filter(n => n.id !== id));
+    } else {
+      console.error('Failed to delete note', error);
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="login-screen">
@@ -187,6 +198,13 @@ function App() {
               <small className="timestamp">
                 {new Date(note.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </small>
+              <button 
+                className="delete-note-btn" 
+                onClick={() => handleDeleteNote(note.id)}
+                title="Deletar Nota"
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
